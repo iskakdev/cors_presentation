@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<title>Демо CORS</title>
+<style>
+  body { font-family: system-ui, sans-serif; max-width: 720px; margin: 40px auto; padding: 0 20px; background: #0f172a; color: #e2e8f0; }
+  h1 { font-size: 1.4rem; }
+  .card { background: #1e293b; border-radius: 12px; padding: 20px; margin-bottom: 16px; }
+  button { background: #3b82f6; color: white; border: none; padding: 10px 16px; border-radius: 8px; cursor: pointer; font-size: 0.95rem; margin-right: 8px; }
+  button:hover { background: #2563eb; }
+  pre { background: #0f172a; border: 1px solid #334155; padding: 12px; border-radius: 8px; white-space: pre-wrap; word-break: break-word; min-height: 24px; }
+  .ok { color: #4ade80; }
+  .fail { color: #f87171; }
+  .hint { color: #94a3b8; font-size: 0.9rem; }
+</style>
+</head>
+<body>
+  <h1>Демонстрация CORS (открыто на http://localhost:8080)</h1>
+  <p class="hint">Открой консоль браузера (F12 → Console) перед тем как жать кнопки — там будет видна настоящая ошибка CORS.</p>
+
+  <div class="card">
+    <h3>1. Запрос к серверу БЕЗ CORS (порт 5001)</h3>
+    <p class="hint">Ожидаем: сервер ответит, но браузер спрячет ответ от JS.</p>
+    <button onclick="callServer('http://localhost:5001', 'result1')">Сделать запрос</button>
+    <pre id="result1"></pre>
+  </div>
+
+  <div class="card">
+    <h3>2. Запрос к серверу С CORS (порт 5002)</h3>
+    <p class="hint">Ожидаем: всё работает, ответ виден.</p>
+    <button onclick="callServer('http://localhost:5002', 'result2')">Сделать запрос</button>
+    <pre id="result2"></pre>
+  </div>
+
+  <div class="card">
+    <h3>3. "Непростой" запрос с кастомным заголовком (порт 5002) — вызовет preflight</h3>
+    <p class="hint">Смотри вкладку Network — сначала улетит OPTIONS, потом GET.</p>
+    <button onclick="callWithHeader()">Сделать запрос с Authorization</button>
+    <pre id="result3"></pre>
+  </div>
+
+  <script>
+    async function callServer(baseUrl, resultId) {
+      const el = document.getElementById(resultId);
+      el.textContent = "Отправляю запрос...";
+      el.className = "";
+      try {
+        const res = await fetch(baseUrl + "/api/hello");
+        const data = await res.json();
+        el.textContent = "✅ Успех: " + JSON.stringify(data);
+        el.className = "ok";
+      } catch (err) {
+        el.textContent = "❌ Ошибка: " + err.message + "\n\n(смотри детали в консоли — там браузер объяснит, что заблокировал CORS)";
+        el.className = "fail";
+      }
+    }
+
+    async function callWithHeader() {
+      const el = document.getElementById("result3");
+      el.textContent = "Отправляю запрос с заголовком Authorization...";
+      el.className = "";
+      try {
+        const res = await fetch("http://localhost:5002/api/hello", {
+          headers: { "Authorization": "Bearer test-token" }
+        });
+        const data = await res.json();
+        el.textContent = "✅ Preflight прошёл, ответ: " + JSON.stringify(data);
+        el.className = "ok";
+      } catch (err) {
+        el.textContent = "❌ Ошибка: " + err.message;
+        el.className = "fail";
+      }
+    }
+  </script>
+</body>
+</html>
